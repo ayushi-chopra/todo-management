@@ -1,5 +1,8 @@
 package com.todo_management.config;
 
+import com.todo_management.security.JwtAuthenticationEntryPoint;
+import com.todo_management.security.JwtAuthenticationFilter;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,16 +19,16 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableMethodSecurity
+@AllArgsConstructor
 public class SpringSecurityConfig {
 
     private UserDetailsService userDetailsService;
-    @Autowired
-    public SpringSecurityConfig(UserDetailsService userDetailsService) {
-        this.userDetailsService = userDetailsService;
-    }
+    private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public static PasswordEncoder passwordEncoder(){
@@ -41,9 +44,13 @@ public class SpringSecurityConfig {
 //                            authorize.requestMatchers(HttpMethod.DELETE,"/api/**").hasRole("ADMIN");
 //                            authorize.requestMatchers(HttpMethod.PATCH,"/api/**").hasAnyRole("ADMIN","USER");
 //                            authorize.requestMatchers(HttpMethod.GET,"/api/**").permitAll();
-                            authorize.anyRequest().authenticated();
+                    authorize.requestMatchers("/api/auth/**").permitAll();
+                    authorize.anyRequest().authenticated();
                         }).userDetailsService(userDetailsService)
                 .httpBasic(Customizer.withDefaults());
+        httpSecurity.exceptionHandling(exception->
+                exception.authenticationEntryPoint(jwtAuthenticationEntryPoint));
+        httpSecurity.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return httpSecurity.build();
     }
 
